@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Film Viewfinder Simulator</title>
+<meta name="description" content="What you see through the viewfinder of film SLRs and rangefinders from the 1950s to the 1990s, drawn at true relative size with working focus aids and meter readouts.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f0f0e'/%3E%3Crect x='5' y='9' width='22' height='14' rx='2' fill='none' stroke='%23d0aa66' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='none' stroke='%23d0aa66' stroke-width='1.6'/%3E%3Cpath d='M12.8 16h6.4' stroke='%23d0aa66' stroke-width='1.2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="sceneDefs"></defs></svg>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Through the Finder</h1>
+      <p id="lede"></p>
+    </div>
+    <div class="hint">Drag a finder to re-aim · <b>Focus</b> until the images line up</div>
+  </header>
+
+  <section id="stage" aria-label="Viewfinders"></section>
+
+  <section id="controls" aria-label="Lens and exposure controls">
+    <div class="ctl c-lens">
+      <div class="lab"><span>Lens</span><output id="o-lens"></output></div>
+      <div class="seg" id="seg-lens" role="group" aria-label="Focal length"></div>
+    </div>
+    <div class="ctl c-focus">
+      <label for="in-focus"><span>Focus distance</span><output id="o-focus"></output></label>
+      <div class="barrel" id="barrel" aria-hidden="true"></div>
+      <input type="range" id="in-focus" min="0" max="1000" step="1">
+      <div class="targets" id="targets"></div>
+    </div>
+    <div class="ctl c-ap">
+      <label for="in-ap"><span>Aperture</span><output id="o-ap"></output></label>
+      <input type="range" id="in-ap" min="0" max="8" step="1">
+    </div>
+    <div class="ctl c-sh">
+      <label for="in-sh"><span>Shutter</span><output id="o-sh"></output></label>
+      <input type="range" id="in-sh" min="0" max="13" step="1">
+    </div>
+    <div class="ctl c-ev">
+      <label for="in-ev"><span>Light</span><output id="o-ev"></output></label>
+      <input type="range" id="in-ev" min="5" max="17" step="1">
+    </div>
+    <div class="ctl c-mode">
+      <div class="lab"><span>Exposure</span></div>
+      <div class="seg" id="seg-mode" role="group" aria-label="Exposure mode"></div>
+    </div>
+    <div class="ctl c-view">
+      <div class="lab"><span>View</span></div>
+      <div class="seg" id="seg-scale" role="group" aria-label="View scale"></div>
+      <p class="meterline" id="meterline"></p>
+    </div>
+    <div class="ctl c-tog">
+      <div class="lab"><span>Options</span></div>
+      <div class="togs">
+        <label class="tog"><input type="checkbox" id="in-dof"> Stop down (depth-of-field preview)</label>
+        <label class="tog"><input type="checkbox" id="in-film"> Show what the film records</label>
+        <button class="chip" id="btn-center" type="button">Re-centre aim</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="details" aria-label="Camera details"></section>
+
+  <section id="catalog" aria-label="Camera catalog">
+    <div class="cat-head">
+      <h2 id="cat-title">Cameras</h2>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <p class="fine">Click a row to load it into the highlighted finder. “Apparent width” is the angle the framed image fills at your eye: the whole screen on an SLR, the frame for the focal length after @ on a rangefinder. ≈ marks an estimate rather than a confirmed spec.</p>
+  </section>
+
+  <section id="notes">
+    <div>
+      <h2>How to read it</h2>
+      <ul>
+        <li><b>SLR:</b> you look at a ground-glass screen, so out-of-focus things blur and the image dims when stopped down. A split image shifts sideways until focused; a microprism ring breaks up and shimmers.</li>
+        <li><b>Rangefinder:</b> you look through a window, so everything is sharp at every distance. Focus by merging the ghost image in the central patch. Bright lines show the lens’s crop; the window does not change with the lens.</li>
+        <li><b>Size:</b> on an SLR, magnification × coverage sets how big the image looks. On a rangefinder the frame also depends on the lens: a 0.55× finder with a 35 mm frame fills about the same angle as a 0.8× SLR, though everything in it looks further away. True size draws every finder at one angular scale.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>What is simulated and what is not</h2>
+      <ul>
+        <li>Blur, split-image shift and rangefinder ghost offset are computed from focal length, aperture, focus distance and rangefinder base. Their sizes are physical, so use Centre ×5 to see them clearly.</li>
+        <li>Meter readouts follow the light, aperture and shutter sliders (ISO 400). Their position and lettering are schematic, not traced from each camera.</li>
+        <li>Screen brightness, tint, patch shape and rangefinder window size are approximations. Eye relief, dioptre, flare and dust are not modelled.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Data</h2>
+      <ul id="srcs"></ul>
+    </div>
+  </section>
+</div>
+<script src="js/scene.js"></script>
+<script src="js/data.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
