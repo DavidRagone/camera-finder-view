@@ -78,6 +78,7 @@ All paths in `index.html` are relative, so the site works under that sub-path wi
 - Magnification and coverage for about a dozen cameras were checked against manuals and manufacturer pages (listed in `SOURCES` and shown on the page). The rest are from recalled manufacturer specifications and were not re-verified.
 - Values marked ≈ are estimates.
 - Readout layouts are schematic: what each finder shows and roughly where, not traced lettering or exact placement.
+- The Canon T90, Minolta Maxxum 7000 and Contax G2 share one generic LCD strip (`D.lcdbar`). The EOS and Nikon autofocus bodies have their own (`D.eos`, `D.nikon`).
 - Rangefinder window sizes, patch shapes, tints and screen brightness are approximations.
 - Eye relief, dioptre, flare and dust are not modelled.
 

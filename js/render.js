@@ -16,7 +16,7 @@ function fmtAv(av,exact){ if(exact) return String(exact); let b=NLIST[0],bd=9; N
 const fmtDist=u=>u<0.018?'∞':(1/u<10?(1/u).toFixed(1):Math.round(1/u))+' m';
 
 /* seven-segment text for LED and LCD readouts */
-const SEG={'0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fgbc','5':'afgcd','6':'afgedc','7':'abc','8':'abcdefg','9':'abcdfg','-':'g','P':'abefg','F':'aefg','A':'abcefg','L':'def','H':'bcefg','E':'adefg','o':'cdeg','r':'eg','n':'ceg',' ':''};
+const SEG={'0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fgbc','5':'afgcd','6':'afgedc','7':'abc','8':'abcdefg','9':'abcdfg','-':'g','P':'abefg','F':'aefg','A':'abcefg','L':'def','C':'adef','H':'bcefg','E':'adefg','o':'cdeg','r':'eg','n':'ceg',' ':''};
 function seg7(txt,x,y,h,col,anchor='start'){
   const w=h*.52,gap=h*.3,t=h*.13,items=[]; let cx=0;
   for(const ch of String(txt)){ if(ch==='.'){ items.push({dot:1,x:cx-gap*.5}); continue; } items.push({ch,x:cx}); cx+=w+gap; }
@@ -158,6 +158,47 @@ D.lcdbar=(c,o)=>{ const {W,H,ex,st}=c; c.b.y1=Math.max(c.b.y1,H+54); const green
   for(let k=-2;k<=2;k++) s+=`<path d="M${r1(sx+k*12)} ${y-(k?4:8)}V${y}" stroke="${fg}" stroke-width="1.6"/>`;
   s+=`<path d="M${r1(sx+ov*12-3.5)} ${y-16}h7l-3.5 6z" fill="${fg}"/>`+TX(sx-32,y-2,'−',12,fg)+TX(sx+32,y-2,'+',12,fg)+TX(w/2-12,y-2,M?'M':ex.mode==='A'?'A':'P',12,fg);
   return s; };
+/* Autofocus bodies confirm focus electronically. Here the mark lights when anything in the scene sits at the focused distance. */
+function focusState(st){ let bd=9; LAY.forEach(L=>{ const d=L.inv-st.u; if(Math.abs(d)<Math.abs(bd)) bd=d; }); return {ok:Math.abs(bd)<.012,dir:Math.sign(bd)}; }
+/* Canon EOS: lit characters on a dark strip below the image. o.m: M mark (650). o.op: manual level shown as OP / CL / oo in the
+   aperture digits (650). o.scale: 'right' = exposure-level scale beside the image (EOS-1N, EOS-3), 'bottom' = scale in the strip. */
+D.eos=(c,o)=>{ const {W,H,ex,st}=c; c.b.y1=Math.max(c.b.y1,H+54); const fg='#c6f25c', dim='#1c2a10', M=ex.mode==='M';
+  const w=Math.min(2*W,300), y=H+31, x0=-w/2, fs=focusState(st), ov=M?ex.over:0;
+  let s=`<rect x="${r1(x0)}" y="${H+9}" width="${r1(w)}" height="29" rx="2" fill="#030503"/>`, x=x0+8;
+  if(o.m){ s+=TX(x+5,y-1,'M',13,M?fg:dim); x+=15; }
+  s+=TX(x+5,y+4,'*',17,dim); x+=14;
+  s+=seg7(SPD[M?ex.Tv:ex.Tve],x+52,y,15,fg,'end'); x+=66;
+  s+=seg7(o.op&&M?(ov>.35?'CL':ov<-.35?'0P':'oo'):apText(ex,M?ex.Av:ex.Ave),x,y,15,fg,'start');
+  if(o.scale==='bottom'){ const sx=x0+w-70, R=o.range||2, v=clamp(ov,-R,R);
+    for(let q=-R*2;q<=R*2;q++) s+=`<path d="M${r1(sx+q*7)} ${y-(q%2?3:q?6:9)}V${y}" stroke="${fg}" stroke-width="1.4"/>`;
+    s+=TX(sx-R*14-9,y-1,'−',11,fg)+TX(sx+R*14+9,y-1,'+',11,fg)+`<path d="M${r1(sx+v*14-3.5)} ${y-16}h7l-3.5 5z" fill="${fg}"/>`; }
+  s+=`<circle cx="${r1(x0+w-11)}" cy="${y-7}" r="4.2" fill="${fs.ok?fg:dim}"/>`;
+  if(o.scale==='right'){ const R=o.range||3, h=Math.min(H-12,R*25), xs=W+12, v=clamp(ov,-R,R); c.b.x1=Math.max(c.b.x1,W+52);
+    s+=`<rect x="${r1(W+7)}" y="${r1(-h-12)}" width="30" height="${r1(2*h+24)}" rx="2" fill="#030503"/>`;
+    for(let q=-R*3;q<=R*3;q++){ const yy=-q*h/(R*3), big=q%3===0; s+=`<path d="M${r1(xs)} ${r1(yy)}h${big?(q?8:11):4}" stroke="${fg}" stroke-width="${big?1.6:1.1}"/>`;
+      if(big&&q) s+=TX(xs+16,yy+3.2,Math.abs(q/3),8.5,fg); }
+    s+=TX(xs+16,-h-3,'+',9,fg)+TX(xs+16,h+9,'−',9,fg)+`<path d="M${r1(xs-1)} ${r1(-v*h/R)}l-6 -3.5v7z" fill="${fg}"/>`; }
+  return s; };
+/* Nikon: dark characters on a pale green LCD below the image. o.focus / o.counter: 'bottom' (F5, F100) or 'top' (F4, where the
+   finder head carries red and green focus LEDs and its own small frame-counter LCD). o.ap:false leaves the f-number to the ADR window. */
+D.nikon=(c,o)=>{ const {W,H,ex,st}=c; c.b.y1=Math.max(c.b.y1,H+54); const ink='#1b1f18', faint='#939c88', M=ex.mode==='M';
+  const w=Math.min(2*W,310), y=H+31, x0=-w/2, fs=focusState(st), ov=clamp(M?ex.over:0,-2,2);
+  const focus=(fx,fy,led)=>{ const on=led?[LED,'#49d16a',LED]:[ink,ink,ink], off=led?'#2c1613':faint, front=!fs.ok&&fs.dir<0, rear=!fs.ok&&fs.dir>0;
+    return `<path d="M${r1(fx)} ${r1(fy-5)}v10l8 -5z" fill="${front?on[0]:off}"/><circle cx="${r1(fx+15)}" cy="${r1(fy)}" r="4" fill="${fs.ok?on[1]:off}"/><path d="M${r1(fx+30)} ${r1(fy-5)}v10l-8 -5z" fill="${rear?on[2]:off}"/>`; };
+  let s=`<rect x="${r1(x0)}" y="${H+9}" width="${r1(w)}" height="29" rx="2" fill="#aeb7a2"/>`, x=x0+8;
+  if(o.focus==='bottom'){ s+=focus(x,y-7,false); x+=40; }
+  s+=`<rect x="${r1(x)}" y="${y-13}" width="15" height="11" rx="2" fill="none" stroke="${ink}" stroke-width="1.3"/><circle cx="${r1(x+7.5)}" cy="${y-7.5}" r="1.8" fill="${ink}"/>`; x+=22;
+  s+=seg7(SPD[M?ex.Tv:ex.Tve],x+52,y,15,ink,'end'); x+=60;
+  if(o.ap!==false){ s+=TX(x+3,y-1,'F',12,ink)+seg7(apText(ex,M?ex.Av:ex.Ave),x+10,y,15,ink,'start'); x+=44; }
+  s+=TX(x+6,y-1,ex.mode,13,ink); x+=20;
+  const sx=x+36; s+=TX(sx-32,y-2,'+',12,ink)+TX(sx+32,y-2,'−',12,ink);
+  for(let q=-2;q<=2;q++) s+=`<path d="M${r1(sx+q*12)} ${y-(q?4:9)}V${y}" stroke="${ink}" stroke-width="1.5"/>`;
+  if(Math.abs(ov)>.15) s+=`<rect x="${r1(Math.min(sx,sx-ov*12))}" y="${y-15}" width="${r1(Math.abs(ov)*12)}" height="4" fill="${ink}"/>`;
+  if(o.counter==='bottom') s+=seg7('12',x0+w-7,y,13,ink,'end');
+  if(o.focus==='top'||o.counter==='top') c.b.y0=Math.min(c.b.y0,-H-48);
+  if(o.focus==='top') s+=focus(W*.46,-H-15,true);
+  if(o.counter==='top') s+=`<rect x="${r1(-W*.46-36)}" y="${-H-26}" width="40" height="21" rx="2" fill="#aeb7a2"/>`+seg7('12',-W*.46-3,-H-9,12,ink,'end');
+  return s; };
 D.om4=(c,o)=>{ const {W,H,ex}=c; c.b.y1=Math.max(c.b.y1,H+54); const ink='#1b1f18', w=Math.min(2*W-10,330), y=H+31, M=ex.mode==='M', x0=-w/2;
   let s=`<rect x="${r1(x0)}" y="${H+9}" width="${r1(w)}" height="29" rx="2" fill="#aeb7a2"/>`;
   if(!M){ const n=ex.TvMax+1, dx=(w-16)/n; for(let i=0;i<n;i++) s+=TX(x0+8+dx*(i+.5),y-11,SPD[i],Math.min(9.5,dx*.4),ink);
@@ -167,9 +208,15 @@ D.om4=(c,o)=>{ const {W,H,ex}=c; c.b.y1=Math.max(c.b.y1,H+54); const ink='#1b1f1
     for(let k=-3;k<=3;k++) s+=`<path d="M${r1(cx+k*18)} ${y-12}v3" stroke="${ink}" stroke-width="1.4"/>`;
     s+=`<rect x="${r1(Math.min(cx,cx+ov*18))}" y="${y-7}" width="${r1(Math.max(2,Math.abs(ov)*18))}" height="5" fill="${ink}"/>`; }
   return s; };
-D.m5=(c,o)=>{ const {H,ex}=c, y=H-17, dev=clamp(ex.over,-2.4,2.4)/2.4, a=18+dev*26, b_=18-dev*26;
-  return `<rect x="-78" y="${y-11}" width="156" height="22" rx="2" fill="${WIN}" opacity=".66"/>`+TX(-56,y+4.5,SPD[ex.Tv],12,'#0c0c0c')
-   +`<path d="M18 ${y+11}l-4 -6h8z" fill="#0c0c0c"/><path d="M${r1(a-9)} ${y+9}L${r1(a+9)} ${y-9}M${r1(b_+9)} ${y+9}L${r1(b_-9)} ${y-9}" stroke="#0c0c0c" stroke-width="2.2" stroke-linecap="round"/>`; };
+/* Leica M5: the meter needle moves with the light reaching the cell (so with the aperture too);
+   the hairline moves with the shutter speed. Exposure is as metered when they cross on the centre line. */
+D.m5=(c,o)=>{ const {H,ex}=c, y=H-17, k=8.5, cx=24, hw=60, ink='#0c0c0c';
+  const xn=clamp(cx+(ex.ev-ex.Av-6.5)*k,cx-hw+10,cx+hw-10), xh=clamp(cx+(ex.Tv-6.5)*k,cx-hw+10,cx+hw-10);
+  return `<rect x="-88" y="${y-11}" width="176" height="22" rx="2" fill="${WIN}" opacity=".72"/>`+TX(-66,y+4.5,SPD[ex.Tv],12,ink)
+   +`<path d="M${cx-hw} ${y}H${cx+hw}" stroke="${ink}" stroke-width=".8" opacity=".5"/>`
+   +`<path d="M${cx-hw-3} ${y-3}a3 3 0 0 0 0 6z" fill="${ink}"/><path d="M${cx+hw+3} ${y-6}a6 6 0 0 1 0 12z" fill="${ink}"/>`
+   +`<path d="M${r1(xh+10)} ${y+10}L${r1(xh-10)} ${y-10}" stroke="${ink}" stroke-width="1.1" stroke-linecap="round"/>`
+   +`<path d="M${r1(xn-10)} ${y+10}L${r1(xn+10)} ${y-10}" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`; };
 D.arrows=(c,o)=>{ const {H,ex}=c, y=H-18, ov=ex.over, l=ov<.3, r=ov>-.3, col=b=>b?LED:'#3a1a16';
   return (l?`<circle cx="-11" cy="${y}" r="10" fill="${LED}" opacity=".2"/>`:'')+(r?`<circle cx="11" cy="${y}" r="10" fill="${LED}" opacity=".2"/>`:'')
    +`<path d="M-17 ${y-7}v14l11 -7z" fill="${col(l)}"/><path d="M17 ${y-7}v14l-11 -7z" fill="${col(r)}"/>`; };
