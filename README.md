@@ -1,6 +1,6 @@
 # Film Viewfinder Simulator
 
-What you see at the eyepiece of 59 film SLRs and rangefinders introduced 1954–1999, drawn at the same angular scale so finders can be compared side by side.
+What you see at the eyepiece of 61 film SLRs and rangefinders introduced 1954–2002, drawn at the same angular scale so finders can be compared side by side.
 
 - **Size and coverage** come from each camera's magnification and frame coverage.
 - **Focus aids** are simulated: ground-glass blur, split-image shift, microprism shimmer, rangefinder double image, parallax-shifting framelines.
@@ -30,6 +30,7 @@ The only external request is the Barlow typeface from Google Fonts. Without a co
 | `js/data.js` | The camera catalog (`CAMERAS`) and the source list (`SOURCES`) |
 | `js/render.js` | Exposure maths, the readout library (`D`), and the SLR and rangefinder renderers |
 | `js/app.js` | State, controls, the compare stage, the catalog table |
+| `tests/` | Checks on the catalog, the renderers and the page, run with Node (see "Tests") |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are |
 
 The scripts are plain classic scripts loaded in that order and share globals. Settings are remembered per browser in `localStorage` under `vf-state`.
@@ -60,9 +61,19 @@ Common fields:
 
 SLR fields: `cov` (or `covH` and `covV`) as a linear fraction of the frame, `scr` (`sm` split + microprism, `split`, `micro`, `plain`, `fullmicro`, `af`), `bright` (0–1), `vig` (corner darkening), `ring`, `spot`, `rect12`, `af`.
 
-Rangefinder fields: `win` (window half-size in finder units), `frames` (sets of focal lengths shown together), `fcov`, `base` (rangefinder base in metres), `patch`, `par` (`auto`, `marks`, `none`), `tint`, and for fixed-lens cameras `lens: {f, N}`.
+Rangefinder fields: `win` (window half-size in finder units), `frames` (sets of focal lengths shown together), `fcov`, `base` (rangefinder base in metres), `patch` (half-size `w` and `h`, plus `rx` for rounded ends, `soft` for blurred edges, `diamond`, `tint`), `par` (`auto`, `marks`, `none`), `tint`, and for fixed-lens cameras `lens: {f, N}`.
 
 To add a new kind of readout, add a function to `D` in `render.js`. It receives the frame half-size, the computed exposure state and the camera, and returns SVG markup.
+
+After adding a camera, update the count and the years in the first line of this file and run the tests. Add what you checked to `SOURCES`.
+
+## Tests
+
+The tests need Node 20 or later and nothing else. They load the same scripts the page does, render every camera at a spread of control settings, and start the page against a stand-in DOM.
+
+```sh
+node --test tests/*.test.js
+```
 
 ## Publish on GitHub Pages
 
@@ -80,6 +91,8 @@ All paths in `index.html` are relative, so the site works under that sub-path wi
 - Readout layouts are schematic: what each finder shows and roughly where, not traced lettering or exact placement.
 - The Canon T90, Minolta Maxxum 7000 and Contax G2 share one generic LCD strip (`D.lcdbar`). The EOS and Nikon autofocus bodies have their own (`D.eos`, `D.nikon`).
 - Rangefinder window sizes, patch shapes, tints and screen brightness are approximations.
+- Rangefinder framelines are all drawn as corner brackets. Many real finders, the Bessas among them, draw broken side lines.
+- The Bessa R and R2 manuals name five meter states without figures, so the points where the LEDs switch are a guess.
 - Eye relief, dioptre, flare and dust are not modelled.
 
 ## Not included yet

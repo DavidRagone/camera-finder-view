@@ -13,6 +13,7 @@ const SLR=o=>Object.assign({kind:'slr',scr:'sm',bright:.8,vig:.3,top:1000,auto:n
 const RF =o=>Object.assign({kind:'rf',top:1000,auto:null,disp:[],est:[],shut:null,ap:null,fcov:.93,par:'auto',off:{x:.036,y:.018},tint:null},o);
 const FX =o=>Object.assign(RF(o),{kind:'fx'});
 const LEICA_WIN={w:455,h:303}, LEICA_PATCH={w:34,h:24};
+const BESSA_WIN={w:430,h:287}, BESSA_PATCH={w:28,h:14,rx:14}, BESSA_LEDS=['arrows',{dot:true,y:212}];
 
 const CAMERAS=[
 /* ---------------- SLR ---------------- */
@@ -170,6 +171,12 @@ RF({id:'contax-g2',make:'Contax',model:'G2',klabel:'Autofocus, zooming finder',k
 RF({id:'hexar-rf',make:'Konica',model:'Hexar RF',year:1999,years:'1999–2003',mag:.6,win:{w:420,h:280},frames:[[28,90],[35,135],[50,75]],fcov:.92,base:.0685,patch:{w:28,h:20},top:4000,auto:'A',
   disp:[['speedscale',{side:'L',inside:true,led:true,set:'self'}]],shut:'both',
   note:'0.6× so the 28 mm frame is easy to see with glasses. Leica-style paired frames, with an LED shutter-speed scale on the left.'}),
+RF({id:'voigtlander-bessa-r',make:'Voigtländer',model:'Bessa R',year:2000,years:'2000–04',mag:.7,win:BESSA_WIN,frames:[[35,90],[50],[75]],fcov:.87,base:.037,patch:BESSA_PATCH,top:2000,
+  disp:[BESSA_LEDS],
+  note:'Cosina’s Leica-screw-mount body under the Voigtländer name. A bright 0.7× finder whose frames are picked with a lever on the top plate: 35 with 90, 50 or 75. The patch is a small sharp-edged oval on a 37 mm base, about half a Leica’s. Three red LEDs at the bottom meter through the lens: the dot alone when exposure is right, the dot with an arrow when slightly off, an arrow alone when further out. Neither setting is shown.'}),
+RF({id:'voigtlander-bessa-r2',make:'Voigtländer',model:'Bessa R2',year:2002,years:'2002–04',mag:.7,win:BESSA_WIN,frames:[[35,90],[50],[75]],fcov:.87,base:.037,patch:BESSA_PATCH,top:2000,
+  disp:[BESSA_LEDS],
+  note:'The Bessa R finder in a metal-covered body with a Leica M bayonet. Nothing changes at the eyepiece: 0.7×, lever-picked 35 with 90, 50 or 75 mm frames, the small oval patch and the three-LED meter. Screw-mount lenses fit through an adapter ring.'}),
 
 /* ---------------- fixed-lens rangefinders ---------------- */
 FX({id:'canonet-giii',make:'Canon',model:'Canonet QL17 G-III',year:1972,years:'1972–82',lens:{f:40,N:1.7},mag:.6,win:{w:300,h:204},base:.037,patch:{w:26,h:18,soft:3,tint:'#ffd84a'},tint:['#9fc3ff',.1],top:500,auto:'S',
@@ -195,6 +202,8 @@ FX({id:'konica-hexar-af',make:'Konica',model:'Hexar AF',klabel:'Fixed-lens autof
   note:'Autofocus, so no patch: a cross marks the AF target and the bright frame shifts with the focus distance. A few LEDs at the left, and no speed or aperture readout.'})
 ];
 const CAM=Object.fromEntries(CAMERAS.map(c=>[c.id,c]));
+/* search text: lower case with accents stripped, so "voigtlander" finds Voigtländer */
+const fold=s=>s.normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
 
 const SOURCES=[
   ['Canon Camera Museum','https://global.canon/en/c-museum/product/film84.html','Canonet, F-1, New F-1 finder specs'],
@@ -214,5 +223,9 @@ const SOURCES=[
   ['Canon EOS 650 manual','https://www.manualsdir.com/manuals/633261/canon-eos-650.html?page=44','0.8×, 94%, OP / CL / oo manual readout'],
   ['Canon EOS-3 manual, specifications','https://www.manualslib.com/manual/24686/Canon-Eos-3.html?page=140','0.72×, 97%, exposure scale at right'],
   ['Canon Camera Museum, EOS-1N','https://global.canon/en/c-museum/product/film173.html','0.72×, 100%'],
-  ['The Camera Craftsman on the Leica M5','https://wiki.l-camera-forum.com/leica-wiki.de/images/a/aa/TheCamera_Craftsman_Leica_M5.pdf','needle and hairline cross midway']
+  ['The Camera Craftsman on the Leica M5','https://wiki.l-camera-forum.com/leica-wiki.de/images/a/aa/TheCamera_Craftsman_Leica_M5.pdf','needle and hairline cross midway'],
+  ['Voigtländer Bessa-R, Cosina archive','https://www.cosina.co.jp/wp/wp-content/uploads/2024/01/bessa-l_r.pdf','0.7×, switched 35 / 50 / 75 / 90 mm frames, 87% of the field at 3 m, three-LED meter'],
+  ['Voigtländer Bessa-R2, Cosina archive','https://www.cosina.co.jp/wp/wp-content/uploads/2024/01/bessa-t-r2.pdf','same finder figures as the Bessa-R, M bayonet'],
+  ['Voigtländer Bessa-R2 instruction manual','https://www.cameramanuals.org/voigtlander_pdf/voigtlander_bessa-r2.pdf','frame selector positions, oval patch, which LEDs light'],
+  ['Cosina Voigtländer Bessa-R, lens-db','https://lens-db.com/camera/cosina-voigtlander-bessa-r-2000','37 mm rangefinder base']
 ];

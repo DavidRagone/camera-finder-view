@@ -123,7 +123,7 @@ function buildCatalog(){
   $('#filters').innerHTML=[['all','All'],['slr','SLR'],['rf','Rangefinder'],['fx','Fixed-lens']].map(([v,t])=>`<button class="chip" type="button" data-ft="${v}">${t}</button>`).join('')
     +`<button class="chip" type="button" id="f-both">Shows shutter + aperture</button><input type="search" id="f-q" placeholder="Search make or model" aria-label="Search cameras">`;
   $('#filters').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.ft) st.ftype=b.dataset.ft; else if(b.id==='f-both') st.both=!st.both; renderCatalog(); });
-  $('#f-q').addEventListener('input',e=>{ st.q=e.target.value.trim().toLowerCase(); renderCatalog(); });
+  $('#f-q').addEventListener('input',e=>{ st.q=fold(e.target.value.trim()); renderCatalog(); });
   $('#tbl thead').addEventListener('click',e=>{ const b=e.target.closest('button[data-k]'); if(!b) return; const k=b.dataset.k; if(st.sortKey===k) st.sortDir*=-1; else { st.sortKey=k; st.sortDir=['mag','width','shut','ap','cov'].includes(k)?-1:1; } renderCatalog(); });
   $('#tbl tbody').addEventListener('click',e=>{ const tr=e.target.closest('tr'); if(!tr) return; const id=tr.dataset.id;
     if(e.target.closest('.addbtn')){ addSlot(id); return; } st.slots[st.active]=id; buildStage(); renderAll(true); });
@@ -131,7 +131,7 @@ function buildCatalog(){
 function renderCatalog(){
   document.querySelectorAll('[data-ft]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.ft===st.ftype)); $('#f-both').setAttribute('aria-pressed',st.both);
   $('#tbl thead').innerHTML='<tr>'+COLS.map(([k,t])=>k?`<th${st.sortKey===k?` aria-sort="${st.sortDir>0?'ascending':'descending'}"`:''}><button type="button" data-k="${k}">${t}${st.sortKey===k?(st.sortDir>0?' ↑':' ↓'):''}</button></th>`:'<th></th>').join('')+'</tr>';
-  const rows=CAMERAS.filter(c=>(st.ftype==='all'||c.kind===st.ftype)&&(!st.both||(c.shut&&c.ap))&&(!st.q||(c.make+' '+c.model).toLowerCase().includes(st.q)));
+  const rows=CAMERAS.filter(c=>(st.ftype==='all'||c.kind===st.ftype)&&(!st.both||(c.shut&&c.ap))&&(!st.q||fold(c.make+' '+c.model).includes(st.q)));
   const sv=sortVal[st.sortKey]; rows.sort((a,b)=>{ const x=sv(a),y=sv(b); return (x<y?-1:x>y?1:a.year-b.year)*st.sortDir; });
   const wmax=Math.max(...CAMERAS.map(c=>geom(c).W));
   $('#tbl tbody').innerHTML=rows.map(c=>{ const g=geom(c), si=st.slots.indexOf(c.id);

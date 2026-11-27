@@ -217,9 +217,15 @@ D.m5=(c,o)=>{ const {H,ex}=c, y=H-17, k=8.5, cx=24, hw=60, ink='#0c0c0c';
    +`<path d="M${cx-hw-3} ${y-3}a3 3 0 0 0 0 6z" fill="${ink}"/><path d="M${cx+hw+3} ${y-6}a6 6 0 0 1 0 12z" fill="${ink}"/>`
    +`<path d="M${r1(xh+10)} ${y+10}L${r1(xh-10)} ${y-10}" stroke="${ink}" stroke-width="1.1" stroke-linecap="round"/>`
    +`<path d="M${r1(xn-10)} ${y+10}L${r1(xn+10)} ${y-10}" stroke="${ink}" stroke-width="2.4" stroke-linecap="round"/>`; };
-D.arrows=(c,o)=>{ const {H,ex}=c, y=H-18, ov=ex.over, l=ov<.3, r=ov>-.3, col=b=>b?LED:'#3a1a16';
-  return (l?`<circle cx="-11" cy="${y}" r="10" fill="${LED}" opacity=".2"/>`:'')+(r?`<circle cx="11" cy="${y}" r="10" fill="${LED}" opacity=".2"/>`:'')
-   +`<path d="M-17 ${y-7}v14l11 -7z" fill="${col(l)}"/><path d="M17 ${y-7}v14l-11 -7z" fill="${col(r)}"/>`; };
+/* Two LED arrows at the bottom of the window: the left one lights for under, the right one for over. Leica M6: both light when
+   exposure is right. o.dot (Bessa R, R2): a round LED between them. Dot alone is right, dot with an arrow slightly off, an arrow
+   alone further off. The Bessa manual names those five states without figures; the half-stop and one-stop steps here are a guess.
+   o.y: height of the row in finder units below the centre, for LEDs that sit above the window's bottom edge. */
+D.arrows=(c,o)=>{ const {H,ex}=c, y=o.y?r1(o.y/DS):H-18, ov=ex.over, g=o.dot?12:6, col=b=>b?LED:'#3a1a16';
+  const l=o.dot?ov<-.4:ov<.3, r=o.dot?ov>.4:ov>-.3, m=!!o.dot&&Math.abs(ov)<1.1;
+  const glow=(x,b)=>b?`<circle cx="${x}" cy="${y}" r="10" fill="${LED}" opacity=".2"/>`:'';
+  return glow(-g-5,l)+glow(g+5,r)+(o.dot?glow(0,m)+`<circle cx="0" cy="${y}" r="4.2" fill="${col(m)}"/>`:'')
+   +`<path d="M${-g-11} ${y-7}v14l11 -7z" fill="${col(l)}"/><path d="M${g+11} ${y-7}v14l-11 -7z" fill="${col(r)}"/>`; };
 D.yashica=(c,o)=>{ const {W,H,ex}=c, ti=ex.ev-ex.Av, over=ti>9.5, slow=ti<5, y=-H+19;
   return (slow?`<circle cx="-40" cy="${y}" r="13" fill="#ffc93a" opacity=".22"/>`:'')+(over?`<circle cx="40" cy="${y}" r="13" fill="${LED}" opacity=".22"/>`:'')
    +`<path d="M-28 ${y-5}h-14v-4l-10 9l10 9v-4h14z" fill="${slow?'#ffc93a':'#4a3d16'}"/><path d="M28 ${y-5}h14v-4l10 9l-10 9v-4h-14z" fill="${over?LED:'#4a1d18'}"/>`; };
@@ -341,7 +347,7 @@ function renderRF(cam,p,st){
   if(P&&cam.base){ const tint=P.tint||'#ffffff', m=Math.max(P.w,P.h)+14; let attr;
     if(P.diamond){ d+=`<clipPath id="${p}cp"><path d="M0 ${-P.h}L${P.w} 0L0 ${P.h}L${-P.w} 0Z"/></clipPath>`; attr=`clip-path="url(#${p}cp)"`; }
     else if(P.soft){ d+=`<filter id="${p}sf" filterUnits="userSpaceOnUse" x="${-m}" y="${-m}" width="${2*m}" height="${2*m}"><feGaussianBlur stdDeviation="${P.soft}"/></filter><mask id="${p}mp" maskUnits="userSpaceOnUse" x="${-m}" y="${-m}" width="${2*m}" height="${2*m}"><rect x="${-P.w}" y="${-P.h}" width="${2*P.w}" height="${2*P.h}" rx="${P.soft*1.5}" fill="#fff" filter="url(#${p}sf)"/></mask>`; attr=`mask="url(#${p}mp)"`; }
-    else { d+=`<clipPath id="${p}cp"><rect x="${-P.w}" y="${-P.h}" width="${2*P.w}" height="${2*P.h}" rx="2"/></clipPath>`; attr=`clip-path="url(#${p}cp)"`; }
+    else { d+=`<clipPath id="${p}cp"><rect x="${-P.w}" y="${-P.h}" width="${2*P.w}" height="${2*P.h}" rx="${P.rx||2}"/></clipPath>`; attr=`clip-path="url(#${p}cp)"`; }
     g+=`<g ${attr}><rect x="${-m}" y="${-m}" width="${2*m}" height="${2*m}" fill="${tint}" opacity="${P.tint?.3:.16}"/><g opacity=".5">${LAY.map((L,i)=>useL(i,sc,st,mag*1000*cam.base*(L.inv-st.u),0)).join('')}</g><rect x="${-m}" y="${-m}" width="${2*m}" height="${2*m}" fill="${tint}" opacity="${P.tint?.12:.05}"/></g>`; }
   /* bright-line frames, with parallax shift toward the lens as focus comes closer */
   const px=mag*1000*cam.off.x*st.u, py=mag*1000*cam.off.y*st.u, fx=cam.par==='auto'?px:0, fy=cam.par==='auto'?py:0;
